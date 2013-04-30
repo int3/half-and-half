@@ -1,0 +1,8 @@
+{
+    "name": "half-and-half",
+    "dependencies": {
+        "underscore": "*",
+        "esprima": "*",
+        "escodegen": "*"
+    }
+}
