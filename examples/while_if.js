@@ -1,5 +1,5 @@
 b = 0;
-c = 0;
+c = 97;
 label = 0;
 
 while (true) {
@@ -13,10 +13,11 @@ while (true) {
   } else if (label === 1) {
     c += 2;
     label = 2;
+    break;
   } else if (label === 2) {
     c += 3;
     break;
   }
 }
 
-console.log(b, c);
+console.log(b, String.fromCharCode(c));

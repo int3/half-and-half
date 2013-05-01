@@ -11,12 +11,16 @@ class ScopeChain
     else if k of @globals then new ir.ObjectLit @globals[k]
     else new ir.Ident k
 
-  set: (k, v) -> @scope[k] = v
+  set: (k, v) ->
+    @scope[k] = v
 
   copy: ->
     copy = new ScopeChain
     for k, v of @scope
-      copy.scope[k] = v
+      if ir.isStatic v
+        copy.scope[k] = new v.constructor v.v
+      else
+        copy.scope[k] = v
     copy
 
   equals: (sc) ->
