@@ -67,6 +67,9 @@ class ir.ESeq extends ir.Expr
 class ir.BinOp extends ir.Expr
   constructor: (@op, @left, @right) -> super()
 
+class ir.UnOp extends ir.Expr
+  constructor: (@op, @arg) -> super()
+
 class ir.Member extends ir.Expr
   constructor: (@object, @property) -> super()
 
@@ -145,6 +148,10 @@ toAST = (node) ->
       operator: node.op
       left: toAST(node.left)
       right: toAST(node.right)
+    when 'UnOp'
+      type: 'UnaryExpression'
+      operator: node.op
+      argument: toAST(node.arg)
     when 'Member'
       type: 'MemberExpression'
       computed: true

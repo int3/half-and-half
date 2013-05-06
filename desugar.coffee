@@ -75,6 +75,11 @@ class Desugarer
         new ir.Move left, right
       when 'BinaryExpression'
         new ir.BinOp c.operator, @toIR(c.left).asExpr(), @toIR(c.right).asExpr()
+      when 'UnaryExpression'
+        if c.operator is '-'
+          new ir.BinOp '-', (new ir.Lit 0), @toIR(c.argument).asExpr()
+        else
+          new ir.UnOp c.operator, @toIR(c.argument).asExpr()
       when 'MemberExpression'
         obj = @toIR c.object
         unless c.computed
@@ -200,6 +205,13 @@ class Desugarer
 
         binop = new ir.BinOp c.op, left, right
         if seq? then new ir.ESeq binop, seq else binop
+      when 'UnOp'
+        seq = null
+        arg = bubbleESeqs c.arg
+        if arg instanceof ir.ESeq
+          new ir.ESeq (new ir.UnOp c.op, arg.expr), arg.stmt
+        else
+          new ir.UnOp c.op, arg
       when 'Member'
         object = bubbleESeqs c.object
         property = bubbleESeqs c.property

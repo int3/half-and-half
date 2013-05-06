@@ -172,6 +172,15 @@ evalExpr = (c, r) ->
         )
       else
         new ir.BinOp c.op, left, right
+    when 'UnOp'
+      arg = evalExpr c.arg, r
+      if arg instanceof ir.Lit
+        if c.op is '!'
+          new ir.Lit !arg.v
+        else
+          throw new Error 'nyi'
+      else
+        new ir.UnOp c.op, arg
     when 'Member'
       obj = evalExpr c.object, r
       prop = evalExpr c.property, r
