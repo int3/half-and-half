@@ -56,7 +56,7 @@ peval = (start) ->
     {block,r} = current
     emit = (s) -> current.newBlock.body.push s
     createBlockFor = (originalBlock) ->
-      nextBlock = new ir.Block originalBlock.id, originalBlock.lineno
+      nextBlock = new ir.Block null, originalBlock.lineno
       seen[originalBlock.id] ?= []
       seen[originalBlock.id].push block: nextBlock, r: r
       nextBlock

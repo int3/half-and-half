@@ -7,17 +7,18 @@ Relooper = Module.Relooper
 
 ir = exports ? this.ir = {}
 
+idCount = 0
+
 class ir.Block
-  constructor: (@id = null, @lineno = null) ->
+  constructor: (@id, @lineno = null) ->
     @body = []
     @jump = null
+    @id ?= idCount++
 
 class ir.IRNode
-  @idCount = 0
-
   constructor: ->
     @type = @.constructor.name
-    @id = ir.IRNode.idCount++
+    @id = idCount++
 
   asExpr: -> throw new Error 'Not expression-able'
 
