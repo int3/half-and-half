@@ -8,7 +8,9 @@ Relooper = Module.Relooper
 ir = exports ? this.ir = {}
 
 class ir.Block
-  constructor: (@id = null, @body = [], @jump = null) ->
+  constructor: (@id = null, @lineno = null) ->
+    @body = []
+    @jump = null
 
 class ir.IRNode
   @idCount = 0
@@ -26,7 +28,7 @@ class ir.CJump extends ir.IRNode
   constructor: (@test, @ifTrue, @ifFalse) ->
 
 class ir.Label extends ir.IRNode
-  constructor: -> super()
+  constructor: (@lineno) -> super()
 
 ir.isJump = (node) -> node instanceof ir.Jump or node instanceof ir.CJump
 
@@ -219,7 +221,9 @@ ir.toProgram = (start) ->
   Relooper.init()
   recur = (block) ->
     return if labels[block.id]?
-    labels[block.id] = Relooper.addBlock escodegen.generate toASTBlock(block)
+    blockString = escodegen.generate toASTBlock(block)
+    blockString += "/* lineno: #{block.lineno} */"
+    labels[block.id] = Relooper.addBlock blockString
     return unless (jump = block.jump)?
 
     if jump instanceof ir.Jump

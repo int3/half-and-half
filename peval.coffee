@@ -46,7 +46,7 @@ console.__nonConstructible__ = 'console'
 process.stdout.__nonConstructible__ = 'process.stdout'
 
 peval = (start) ->
-  startBlock = new ir.Block start.id
+  startBlock = new ir.Block start.id, start.lineno
   startEnv = new ScopeChain
   pending = [block: start, newBlock: startBlock, r: startEnv]
   seen = {} # block id => array of seen environments
@@ -55,10 +55,10 @@ peval = (start) ->
   while current = pending.pop()
     {block,r} = current
     emit = (s) -> current.newBlock.body.push s
-    createBlockFor = (id) ->
-      nextBlock = new ir.Block id
-      seen[id] ?= []
-      seen[id].push block: nextBlock, r: r
+    createBlockFor = (originalBlock) ->
+      nextBlock = new ir.Block originalBlock.id, originalBlock.lineno
+      seen[originalBlock.id] ?= []
+      seen[originalBlock.id].push block: nextBlock, r: r
       nextBlock
     for c in block.body
       switch c.constructor.name
@@ -127,10 +127,10 @@ peval = (start) ->
         trueBlock = findSpecBlock jump.ifTrue.id
         falseBlock = findSpecBlock jump.ifFalse.id
         unless trueBlock?
-          trueBlock = createBlockFor jump.ifTrue.id
+          trueBlock = createBlockFor jump.ifTrue
           pending.push { block: jump.ifTrue, newBlock: trueBlock, r: r.copy() }
         unless falseBlock?
-          falseBlock = createBlockFor jump.ifFalse.id
+          falseBlock = createBlockFor jump.ifFalse
           pending.push { block: jump.ifFalse, newBlock: falseBlock, r: r.copy() }
         current.newBlock.jump = new ir.CJump test, trueBlock, falseBlock
       else
@@ -208,4 +208,4 @@ if require.main is module
   esprima = require 'esprima'
   fs = require 'fs'
   {desugar} = require './desugar'
-  console.log ir.toProgram peval desugar esprima.parse fs.readFileSync process.argv[2]
+  console.log ir.toProgram peval desugar esprima.parse (fs.readFileSync process.argv[2]), loc: true

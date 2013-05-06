@@ -15,29 +15,29 @@ class Desugarer
     switch c.type
       when 'Program', 'BlockStatement'
         if c.type is 'Program'
-          seq = new ir.Label
+          seq = new ir.Label c.loc.start.line
           @startId = seq.id
         else
           seq = null
         for s in c.body
           seq = new ir.Seq seq, @toIR(s)
-        seq ? new Label # XXX
+        seq
       when 'IfStatement'
         test = (@toIR c.test).asExpr()
-        ifTrue = new ir.Label
-        ifFalse = new ir.Label
-        done = new ir.Label
+        ifTrue = new ir.Label c.consequent.loc.start.line
+        done = new ir.Label c.loc.end.line
         @seqBlocks.push (new ir.Seq ifTrue, (@toIR c.consequent), new ir.Jump done)
         if c.alternate?
+          ifFalse = new ir.Label c.alternate.loc.start.line
           @seqBlocks.push (new ir.Seq ifFalse, (@toIR c.alternate), new ir.Jump done)
           new ir.Seq (new ir.CJump test, ifTrue, ifFalse), done
         else
           new ir.Seq (new ir.CJump test, ifTrue, done), done
       when 'WhileStatement'
         test = (@toIR c.test).asExpr()
-        head = new ir.Label
-        ifTrue = new ir.Label
-        done = new ir.Label
+        head = new ir.Label c.test.loc.start.line
+        ifTrue = new ir.Label c.body.loc.start.line
+        done = new ir.Label c.body.loc.end.line
         @loopExits.push { break: done, continue: head }
         @seqBlocks.push (new ir.Seq ifTrue, (@toIR c.body), new ir.Jump head)
         @loopExits.pop()
@@ -106,7 +106,7 @@ class Desugarer
           c.right? && recur c.right
         when 'Label'
           block?.jump = new ir.Jump c
-          @blocks[c.id] = block = new ir.Block c.id
+          @blocks[c.id] = block = new ir.Block c.id, c.lineno
         when 'Jump', 'CJump'
           block?.jump = c
           block = null
@@ -246,5 +246,5 @@ if require.main == module
   fs = require 'fs'
   esprima = require 'esprima'
   console.log ir.toProgram desugar.desugar(
-    esprima.parse fs.readFileSync process.argv[2]
+    esprima.parse (fs.readFileSync process.argv[2]), loc: true
   )
