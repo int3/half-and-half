@@ -29,11 +29,11 @@ while (i < program.length) {
     } else if (program[i] === ',') {
         data = new Buffer(1);
         bytesRead = fs.readSync(input, data, 0, 1, null);
-        arr[j] = data[0];
-        //if (bytesRead === 0)
-          //arr[j] = 0
-        //else
-          //arr[j] = data[0];
+        if (bytesRead === 0) {
+          arr[j] = 0;
+        } else {
+          arr[j] = data[0];
+        }
     } else if (program[i] === '[') {
         if (arr[j] === 0) {
             open = 1;

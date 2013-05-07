@@ -223,7 +223,12 @@ ir.toProgram = (start) ->
   recur = (block) ->
     return if labels[block.id]?
     blockString = escodegen.generate toASTBlock(block)
-    blockString += "/* lineno: #{block.lineno} */"
+    commentString = "id: #{block.id} lineno: #{block.lineno} "
+    if block.jump instanceof ir.CJump
+      commentString += "jump: #{block.jump.ifTrue.id} (T) #{block.jump.ifFalse.id} (F)"
+    else if block.jump instanceof ir.Jump
+      commentString += "jump: #{block.jump.target.id}*/"
+    blockString = "/* #{commentString} */\n#{blockString}"
     labels[block.id] = Relooper.addBlock blockString
     return unless (jump = block.jump)?
 

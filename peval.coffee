@@ -18,7 +18,7 @@ class ScopeChain
     copy = new ScopeChain
     for k, v of @scope
       if ir.isStatic v
-        copy.scope[k] = new v.constructor v.v
+        copy.scope[k] = new v.constructor _.clone v.v
       else
         copy.scope[k] = v
     copy
@@ -26,6 +26,7 @@ class ScopeChain
   equals: (sc) ->
     return unless (Object.keys @scope).length == (Object.keys sc.scope).length
     for k, v of @scope
+      return false unless k of sc.scope
       vp = sc.scope[k]
       if v.prototype isnt vp.prototype
         return false
@@ -113,35 +114,71 @@ peval = (start) ->
 
     continue unless (jump = block.jump)?
 
+    findOrCreateSpecBlock = (target) ->
+      if (specializedPoints = seen[target.id])?
+        for point in specializedPoints
+          if point.r.equals r
+            targetBlock = point.block
+            break
+      unless targetBlock?
+        targetBlock = createBlockFor target
+        pending.push { block: target, newBlock: targetBlock, r: r.copy() }
+      targetBlock
+
     if jump instanceof ir.Jump
-      pending.push { block: jump.target, newBlock: current.newBlock, r: r }
+      current.newBlock.jump = new ir.Jump findOrCreateSpecBlock jump.target
     else if jump instanceof ir.CJump
       test = evalExpr jump.test, r
       unless ir.isStatic test
-        findSpecBlock = (blockId) ->
-          if (specializedPoints = seen[blockId])?
-            for point in specializedPoints
-              if point.r.equals r
-                return point.block
-          null
-        trueBlock = findSpecBlock jump.ifTrue.id
-        falseBlock = findSpecBlock jump.ifFalse.id
-        unless trueBlock?
-          trueBlock = createBlockFor jump.ifTrue
-          pending.push { block: jump.ifTrue, newBlock: trueBlock, r: r.copy() }
-        unless falseBlock?
-          falseBlock = createBlockFor jump.ifFalse
-          pending.push { block: jump.ifFalse, newBlock: falseBlock, r: r.copy() }
+        trueBlock = findOrCreateSpecBlock jump.ifTrue
+        falseBlock = findOrCreateSpecBlock jump.ifFalse
         current.newBlock.jump = new ir.CJump test, trueBlock, falseBlock
       else
         if test.v
-          pending.push { block: jump.ifTrue, newBlock: current.newBlock, r: r }
+          target = jump.ifTrue
         else
-          pending.push { block: jump.ifFalse, newBlock: current.newBlock, r: r }
+          target = jump.ifFalse
+        current.newBlock.jump = new ir.Jump findOrCreateSpecBlock target
     else
       throw new Error 'wat'
 
+  compressTransitions startBlock
+
   startBlock
+
+compressTransitions = (startBlock) ->
+  inCount = {} # block id => number of incoming edges
+  countIncoming = (block) ->
+    if block.id of inCount
+      inCount[block.id]++
+      return
+    inCount[block.id] = 0
+    if block.jump instanceof ir.Jump
+      countIncoming block.jump.target
+    else if block.jump instanceof ir.CJump
+      countIncoming block.jump.ifTrue
+      countIncoming block.jump.ifFalse
+  countIncoming(startBlock)
+
+  pending = [startBlock]
+  seen = {}
+  while block = pending.pop()
+    continue if block.id of seen
+    seen[block.id] = true
+
+    headBlock = block
+    while block.jump instanceof ir.Jump and
+        inCount[block.jump.target.id] == 0
+      block = block.jump.target
+      Array::push.apply headBlock.body, block.body
+
+    headBlock.jump = block.jump
+    if block.jump instanceof ir.CJump
+      pending.push block.jump.ifTrue, block.jump.ifFalse
+    else if block.jump instanceof ir.Jump
+      pending.push block.jump.target
+
+  null # don't accumulate results
 
 evalExpr = (c, r) ->
   switch c.constructor.name
@@ -204,8 +241,21 @@ evalExpr = (c, r) ->
       console.error c
       throw new Error 'NYI'
 
+debugPrintCFG = (block, seen = {}) ->
+  return if block.id of seen
+  seen[block.id] = true
+  if block.jump instanceof ir.Jump
+    console.log "#{block.id} -> #{block.jump.target.id}"
+    debugPrintCFG block.jump.target, seen
+  else if block.jump instanceof ir.CJump
+    console.log "#{block.id} -> #{block.jump.ifTrue.id} (T)"
+    console.log "#{block.id} -> #{block.jump.ifFalse.id} (F)"
+    debugPrintCFG block.jump.ifTrue, seen
+    debugPrintCFG block.jump.ifFalse, seen
+
 if require.main is module
   esprima = require 'esprima'
   fs = require 'fs'
   {desugar} = require './desugar'
   console.log ir.toProgram peval desugar esprima.parse (fs.readFileSync process.argv[2]), loc: true
+  #debugPrintCFG peval desugar esprima.parse (fs.readFileSync process.argv[2]), loc: true
