@@ -3,6 +3,7 @@
     "dependencies": {
         "underscore": "*",
         "esprima": "*",
-        "escodegen": "*"
+        "escodegen": "*",
+        "optimist": "*"
     }
 }

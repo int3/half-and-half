@@ -253,21 +253,30 @@ evalExpr = (c, r) ->
       console.error c
       throw new Error 'NYI'
 
-debugPrintCFG = (block, seen = {}) ->
-  return if block.id of seen
-  seen[block.id] = true
-  if block.jump instanceof ir.Jump
-    console.log "#{block.id} -> #{block.jump.target.id}"
-    debugPrintCFG block.jump.target, seen
-  else if block.jump instanceof ir.CJump
-    console.log "#{block.id} -> #{block.jump.ifTrue.id} (T)"
-    console.log "#{block.id} -> #{block.jump.ifFalse.id} (F)"
-    debugPrintCFG block.jump.ifTrue, seen
-    debugPrintCFG block.jump.ifFalse, seen
+debugPrintCFG = (block) ->
+  seen = {}
+  recur = (block) ->
+    return if block.id of seen
+    seen[block.id] = true
+    if block.jump instanceof ir.Jump
+      console.log "#{block.id} -> #{block.jump.target.id};"
+      recur block.jump.target
+    else if block.jump instanceof ir.CJump
+      console.log "#{block.id} -> #{block.jump.ifTrue.id} [label=T];"
+      console.log "#{block.id} -> #{block.jump.ifFalse.id} [label=F];"
+      recur block.jump.ifTrue
+      recur block.jump.ifFalse
+  console.log "digraph cfg {"
+  recur block
+  console.log "}"
 
 if require.main is module
+  {argv} = require 'optimist'
   esprima = require 'esprima'
   fs = require 'fs'
   {desugar} = require './desugar'
-  console.log ir.toProgram peval desugar esprima.parse (fs.readFileSync process.argv[2]), loc: true
-  #debugPrintCFG peval desugar esprima.parse (fs.readFileSync process.argv[2]), loc: true
+  cfg = peval desugar esprima.parse (fs.readFileSync argv._[0]), loc: true
+  if argv.cfg
+    debugPrintCFG cfg
+  else
+    console.log ir.toProgram cfg
