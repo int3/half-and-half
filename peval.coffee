@@ -170,13 +170,22 @@ compressTransitions = (startBlock) ->
     seen[block.id] = true
 
     headBlock = block
+    seenJoin = false
     while block.jump instanceof ir.Jump and
-        inCount[block.jump.target.id] == 0
+       (!(seenJoin |= inCount[block.jump.target.id] != 0) or
+       block.jump.target.body.length == 0)
       block = block.jump.target
       Array::push.apply headBlock.body, block.body
 
+    contractEmptyJumps = (b) ->
+      while b.jump instanceof ir.Jump and b.body.length == 0
+        b = b.jump.target
+      b
+
     headBlock.jump = block.jump
     if block.jump instanceof ir.CJump
+      block.jump.ifTrue = contractEmptyJumps block.jump.ifTrue
+      block.jump.ifFalse = contractEmptyJumps block.jump.ifFalse
       pending.push block.jump.ifTrue, block.jump.ifFalse
     else if block.jump instanceof ir.Jump
       pending.push block.jump.target
