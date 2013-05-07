@@ -47,7 +47,7 @@ console.__nonConstructible__ = 'console'
 process.stdout.__nonConstructible__ = 'process.stdout'
 
 peval = (start) ->
-  startBlock = new ir.Block start.id, start.lineno
+  startBlock = new ir.Block null, start.lineno
   startEnv = new ScopeChain
   pending = [block: start, newBlock: startBlock, r: startEnv]
   seen = {} # block id => array of seen environments
@@ -68,13 +68,16 @@ peval = (start) ->
             prop = evalExpr c.left.property, r
 
           right = evalExpr c.right, r
-          unless ir.isStatic right
+          unless right instanceof ir.Lit
+            # XXX emitting for static ObjectLit as a temporary hack
             if c.left instanceof ir.Ident
               emit new ir.Move c.left, right
             else if c.left instanceof ir.Member
               emit new ir.Move (new ir.Member c.left.object, prop), right
             else
               throw new Error 'nyi'
+
+          unless ir.isStatic right
             right = DYNAMIC
 
           if c.left instanceof ir.Ident

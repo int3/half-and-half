@@ -223,11 +223,13 @@ ir.toProgram = (start) ->
   recur = (block) ->
     return if labels[block.id]?
     blockString = escodegen.generate toASTBlock(block)
-    commentString = "id: #{block.id} lineno: #{block.lineno} "
+    commentString = "id: #{block.id} lineno: #{block.lineno}"
     if block.jump instanceof ir.CJump
-      commentString += "jump: #{block.jump.ifTrue.id} (T) #{block.jump.ifFalse.id} (F)"
+      commentString += " jump: #{block.jump.ifTrue.id} (T) #{block.jump.ifFalse.id} (F)"
     else if block.jump instanceof ir.Jump
-      commentString += "jump: #{block.jump.target.id}*/"
+      commentString += " jump: #{block.jump.target.id}"
+    else
+      blockString += "return;"
     blockString = "/* #{commentString} */\n#{blockString}"
     labels[block.id] = Relooper.addBlock blockString
     return unless (jump = block.jump)?
@@ -244,7 +246,7 @@ ir.toProgram = (start) ->
     else
       throw new Error 'wat'
   recur(start)
-  Relooper.render(labels[start.id])
+  "(function(){#{Relooper.render(labels[start.id])}}());"
 
 if require.main == module
   l1 = new ir.Label
