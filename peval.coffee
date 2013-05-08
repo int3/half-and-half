@@ -48,7 +48,7 @@ String.__nonConstructible__ = 'String'
 String.fromCharCode.__pure__ = true
 Buffer.__nonConstructible__ = 'Buffer'
 console.__nonConstructible__ = 'console'
-process.stdout.__nonConstructible__ = 'process.stdout'
+process.stdout.__nonConstructible__ = 'process["stdout"]'
 
 peval = (start) ->
   startBlock = new ir.Block null, start.lineno

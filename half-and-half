@@ -1,0 +1,3 @@
+#! /bin/sh
+coffee peval.coffee "$@" | java -jar vendor/compiler.jar --compilation_level ADVANCED_OPTIMIZATIONS --formatting PRETTY_PRINT
+
