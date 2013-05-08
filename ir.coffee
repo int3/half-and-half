@@ -230,7 +230,7 @@ ir.toProgram = (start) ->
       commentString += " jump: #{block.jump.target.id}"
     else
       blockString += "return;"
-    blockString = "/* #{commentString} */\n#{blockString}"
+    #blockString = "/* #{commentString} */\n#{blockString}"
     labels[block.id] = Relooper.addBlock blockString
     return unless (jump = block.jump)?
 

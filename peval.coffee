@@ -1,5 +1,6 @@
 _ = require 'underscore'
 ir = require './ir'
+liveness = require './liveness'
 
 class ScopeChain
   constructor: ->
@@ -23,20 +24,23 @@ class ScopeChain
         copy.scope[k] = v
     copy
 
-  equals: (sc) ->
-    return unless (Object.keys @scope).length == (Object.keys sc.scope).length
-    for k, v of @scope
-      return false unless k of sc.scope
-      vp = sc.scope[k]
-      if v.prototype isnt vp.prototype
-        return false
-      if v instanceof ir.Lit
-        return false if v.v isnt vp.v
-      else if v instanceof ir.ObjectLit
-        return false unless _.isEqual v.v, vp.v
-      # v and vp are both dynamic, then.
-      # XXX need to revise this if we store any non-trivial dynamic values.
-    true
+isStaticEnvEqual = (liveIn, s1, s2) ->
+  for varName of liveIn
+    if varName of s1.scope
+      return false unless varName of s2.scope
+    else
+      continue
+    v = s1.scope[varName]
+    vp = s2.scope[varName]
+    if v.prototype isnt vp.prototype
+      return false
+    if v instanceof ir.Lit
+      return false if v.v isnt vp.v
+    else if v instanceof ir.ObjectLit
+      return false unless _.isEqual v.v, vp.v
+    # v and vp are both dynamic, then.
+    # XXX need to revise this if we store any non-trivial dynamic values.
+  true
 
 DYNAMIC = { type: 'DYNAMIC' }
 
@@ -52,6 +56,8 @@ peval = (start) ->
   pending = [block: start, newBlock: startBlock, r: startEnv]
   seen = {} # block id => array of seen environments
   seen[start.id] = [block: startBlock, r: startEnv]
+
+  live = liveness.analyze start
 
   while current = pending.pop()
     {block,r} = current
@@ -120,7 +126,7 @@ peval = (start) ->
     findOrCreateSpecBlock = (target) ->
       if (specializedPoints = seen[target.id])?
         for point in specializedPoints
-          if point.r.equals r
+          if isStaticEnvEqual live.in[target.id], point.r, r
             targetBlock = point.block
             break
       unless targetBlock?
