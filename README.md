@@ -12,7 +12,7 @@ Setup & Usage
 Examples
 --------
 
-The following example is an if statement in a while loop that emulates gotos
+The following example is an `if` statement in a `while` loop that emulates gotos
 using a `label` variable. The underlying control flow can be written much more
 simply as an if-else statement, though, and half-and-half is able to figure that
 out:
