@@ -1,10 +1,10 @@
 half-and-half
 =============
 
-A simple partial evaluator for Javascript.
+A simple partial evaluator for JavaScript.
 
 Disclaimer: This is currently a hackish prototype. It only supports a subset of
-Javascript syntax, and only deals with code written in the global environment.
+JavaScript syntax, and only deals with code written in the global environment.
 
 Setup & Usage
 -------------
