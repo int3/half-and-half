@@ -277,7 +277,7 @@ debugPrintCFG = (block) ->
   console.log "}"
 
 if require.main is module
-  {argv} = require 'optimist'
+  {argv} = (require 'optimist').boolean 'cfg'
   esprima = require 'esprima'
   fs = require 'fs'
   {desugar} = require './desugar'
