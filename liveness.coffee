@@ -32,7 +32,7 @@ exprGen = (c) ->
 
 liveness.blockGenKill = (block) ->
   blockKill = {}
-  blockGen = {}
+  blockGen = if block.jump instanceof ir.CJump then exprGen block.jump.test else {}
   nextGen = {}
   nextKill = {}
   gen = {}
